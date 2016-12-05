@@ -56,16 +56,6 @@
         user: howinator
         key: "{{ lookup('file', '/Users/howie/.ssh/id_rsa.pub') }}"
 
-
-    # - name: copy ssh key from local to pi for howinator
-    #   copy:
-    #     src: /Users/howie/.ssh/id_rsa.pub
-    #     dest: "{{ tmp }}/howinator_key.pub"
-    #     mode: 555
-
-    # - name: copy key to authorized keys
-    #   command: "cat {{ tmp }}/howinator_key.pub > /home/howinator/.ssh/authorized_keys"
-
     - name: make go workspace
       file:
         path: "/home/{{ item[1].name }}/{{ item[0] }}"
