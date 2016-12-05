@@ -1,2 +1,0 @@
-[raspberries]
-192.168.1.23  ansible_connection=ssh  ansible_user=pi

@@ -1,2 +1,2 @@
 # spark-bowl
-Automatic dog feed
+Automatic dog feeder
