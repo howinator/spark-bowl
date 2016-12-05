@@ -1,0 +1,125 @@
+---
+# Call playbook with `ansible-playbook provision-pi-playbook.yml -i hosts --vault-password-file ~/.vault_pass.txt`
+- hosts: raspberries
+  become: yes
+
+  vars:
+    - pi_users:
+        - name: howinator
+          comment: "Howie Benefiel"
+        - name: sarangj
+          comment: "Sarang Joshi"
+        - name: eforzano
+          comment: "Ernie Forzano"
+        - name: etam
+          comment: "Emily Tam"
+  vars_files:
+    - vars/pi-vault.yml
+
+
+  tasks:
+
+    - name: Create users
+      user:
+        name: "{{ item.name }}"
+        comment: "{{ item.comment }}"
+        groups: users,sudo
+        group: users
+        generate_ssh_key: yes
+        ssh_key_bits: 4096
+        ssh_key_file: .ssh/id_rsa
+      with_items: "{{ pi_users }}"
+
+    - name: make temp directory
+      command: mktemp -d
+      register: throwaway
+
+    - name: set name of temp dir
+      set_fact:
+        tmp: "{{ throwaway.stdout }}"
+
+    - name: Add passwords to users
+      user:
+        name: "{{ item.key }}"
+        password: "{{ item.value.password }}"
+      with_dict: "{{ users_passwords }}"
+
+    - name: make authorized keys for everyone
+      file:
+        path: "/home/{{ item.name }}/.ssh/authorized_keys"
+        state: touch
+      with_items:
+        - "{{ pi_users }}"
+
+    - name: copy ssh key to authorized keys
+      authorized_key:
+        user: howinator
+        key: "{{ lookup('file', '/Users/howie/.ssh/id_rsa.pub') }}"
+
+
+    # - name: copy ssh key from local to pi for howinator
+    #   copy:
+    #     src: /Users/howie/.ssh/id_rsa.pub
+    #     dest: "{{ tmp }}/howinator_key.pub"
+    #     mode: 555
+
+    # - name: copy key to authorized keys
+    #   command: "cat {{ tmp }}/howinator_key.pub > /home/howinator/.ssh/authorized_keys"
+
+    - name: make go workspace
+      file:
+        path: "/home/{{ item[1].name }}/{{ item[0] }}"
+        owner: "{{ item[1].name }}"
+        mode: "u=rwx,g=rx,o=rx"
+        state: directory
+      with_nested:
+        - [ 'work', 'work/src', 'work/bin', 'work/pkg' ]
+        - "{{ pi_users }}"
+
+    - name: Disable password authentication for ssh
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+
+    - name: Change ssh port
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '^Port [0-9]+'
+        line: 'Port 50069'
+
+    - name: set name of go binary to download
+      set_fact:
+        go_binary: "go1.7.4.linux-armv6l.tar.gz"
+
+    - name: unarchive binary
+      unarchive:
+        src: "https://storage.googleapis.com/golang/go1.7.4.linux-armv6l.tar.gz"
+        dest: /usr/local
+        remote_src: yes
+
+    - name: add go path to all paths
+      lineinfile:
+        dest: "/etc/profile"
+        line: 'export PATH=$PATH:/usr/local/go/bin'
+        state: present
+
+    - name: add go path for all users
+      lineinfile:
+        dest: "/home/{{ item.name }}/.profile"
+        line: 'export GOPATH=$HOME/work'
+        state: present
+      with_items:
+        - "{{ pi_users }}"
+
+    - shell: "echo $GOPATH"
+      register: throwaway
+
+    - debug: var=throwaway.stdout
+
+    - name: get echo package
+      command: "go get -u github.com/labstack/echo"
+      environment:
+        GOPATH: "/home/howinator/work"
+        PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+
