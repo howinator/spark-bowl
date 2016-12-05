@@ -113,3 +113,7 @@
         GOPATH: "/home/howinator/work"
         PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
 
+    - name: restart ssh
+      service:
+        name: sshd
+        state: restarted
