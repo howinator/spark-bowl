@@ -38,11 +38,20 @@
       set_fact:
         tmp: "{{ throwaway.stdout }}"
 
-    - name: Add passwords to users
-      user:
-        name: "{{ item.key }}"
-        password: "{{ item.value.password }}"
-      with_dict: "{{ users_passwords }}"
+    # - name: Add passwords to users
+    #   user:
+    #     name: "{{ item.key }}"
+    #     password: "{{ item.value.password }}"
+    #   with_dict: "{{ users_passwords }}"
+
+    - name: set no password for sudo for howie and sarang
+      lineinfile:
+        dest: /etc/sudoers
+        line: "{{ item }} ALL=(ALL) NOPASSWD:ALL"
+        state: present
+      with_items:
+        - howinator
+        - sarangj
 
     - name: make authorized keys for everyone
       file:
@@ -78,6 +87,14 @@
         regexp: '^Port [0-9]+'
         line: 'Port 50069'
 
+    - name: install apt packages
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        - vim
+
     - name: set name of go binary to download
       set_fact:
         go_binary: "go1.7.4.linux-armv6l.tar.gz"
@@ -101,11 +118,6 @@
         state: present
       with_items:
         - "{{ pi_users }}"
-
-    - shell: "echo $GOPATH"
-      register: throwaway
-
-    - debug: var=throwaway.stdout
 
     - name: get echo package
       command: "go get -u github.com/labstack/echo"
