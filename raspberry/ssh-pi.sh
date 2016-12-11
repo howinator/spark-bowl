@@ -3,6 +3,7 @@ set -ex
 
 usage() {
     echo 'usage: sshi-pi.sh USERNAME' >&2
+    exit 1
 }
 
 if [ $# != 1 ]; then
