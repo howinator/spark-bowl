@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: make virtualenv
+      pip:
+        name: "{{ item }}"
+        virtualenv: "{{ playbook_dir }}/../../.venv-spark"
+        virtualenv_command: virtualenv
+        virtualenv_python: python2.7
+      with_items:
+        - requests
+        - boto
