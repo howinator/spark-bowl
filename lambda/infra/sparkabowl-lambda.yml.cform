@@ -1,0 +1,10 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Infrastructure template for handling Alexa calls and routing them to the RPi"
+
+Parameters:
+  FunctionName:
+    Description: The name of the lambda function for routing Alexa requests to the RPi
+    Type: String
+    Default: "sparkable-skill-function"
+  Bu

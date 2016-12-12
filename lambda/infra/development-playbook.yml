@@ -11,4 +11,5 @@
         virtualenv_python: python2.7
       with_items:
         - requests
-        - boto
+        - boto3
+        - chalice

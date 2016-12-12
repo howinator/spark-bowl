@@ -1,0 +1,74 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "All the data resources for the backend"
+
+Parameters:
+  CodeS3BuketName:
+    Description: Name of the S3 bucket to store the code in
+    Type: String
+    Default: "howinator-sparkabowl"
+  # This should probably be re-factored out to another `aws-setup` repo
+  ConfigurationS3BucketName:
+    Description: Name of the S3 Bucket to store configuration in
+    Type: String
+    Default: "howinator-configuration"
+  AccountId:
+    Description: Account Id for the stack
+Resources:
+  CodeS3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: Private
+      BucketName: !Ref CodeS3BuketName
+  ConfigS3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: Private
+      Bucket: !Ref ConfigurationS3BucketName
+  # From http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingKMSEncryption.html
+  ConfigBucketEncryptionPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyDocument:
+        Statement:
+          -
+            Action: "s3:PutObject"
+            Sid: DenyUnencryptedObjectUploads
+            Principal: "*"
+            Resource: !Sub "arn:aws:s3:::${ConfigurationS3BucketName}/*"
+            Condition:
+              StringNotEquals:
+                !Sub |
+                  "s3:x-amz-server-side-encryption-aws-kms-key-id":"aws:kms:us-east-1:${AWS::AccountId}:key/${ConfigBucketKey}"
+        Version: "2012-10-17"
+  DependsOn: ConfigBucketKey
+  ConfigBucketKey:
+    Type: "AWS::KMS::Key"
+    # Probably need to add to policy so that lambda and RPi can use it
+    # http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-key.html
+    Properties:
+      Description: key for dealing with encrypted objects
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "config-s3-bucket-key"
+        Statement:
+          -
+            Sid: "Allow administrators full access to key"
+            Principal:
+              AWS: "arn:aws:iam::742524706181:group/Administrators"
+            Action:
+              - "kms:Create"
+              - "kms:Describe"
+              - "kms:Enable*"
+              - "kms:Put*"
+              - "kms:List*"
+              - "kms:Update*"
+              - "kms:Revoke*"
+              - "kms:Disable*"
+              - "kms:Get*"
+              - "kms:Delete*"
+              - "kms:ScheduleKeyDeletion"
+              - "kms:CancelKeyDeletion"
+            Resource: "*"
+
+Outputs:
