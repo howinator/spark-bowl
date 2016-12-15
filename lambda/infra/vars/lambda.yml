@@ -1,1 +1,4 @@
-account-id: 742524706181
+stack_name: "sparkabowl"
+region: "us-east-1"
+config_bucket_name: "howinator-config-bucket"
+code_bucket_name: "howinator-{{ stack_name }}-code-bucket"

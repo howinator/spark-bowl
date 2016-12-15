@@ -3,45 +3,47 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "All the data resources for the backend"
 
 Parameters:
-  CodeS3BuketName:
+  CodeBucketName:
     Description: Name of the S3 bucket to store the code in
     Type: String
     Default: "howinator-sparkabowl"
   # This should probably be re-factored out to another `aws-setup` repo
-  ConfigurationS3BucketName:
+  ConfigBucketName:
     Description: Name of the S3 Bucket to store configuration in
     Type: String
     Default: "howinator-configuration"
-  AccountId:
-    Description: Account Id for the stack
 Resources:
-  CodeS3Bucket:
+  CodeBucket:
     Type: "AWS::S3::Bucket"
     Properties:
       AccessControl: Private
-      BucketName: !Ref CodeS3BuketName
-  ConfigS3Bucket:
+      BucketName: !Ref CodeBucketName
+  ConfigBucket:
     Type: "AWS::S3::Bucket"
     Properties:
       AccessControl: Private
-      Bucket: !Ref ConfigurationS3BucketName
+      BucketName: !Ref ConfigBucketName
   # From http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingKMSEncryption.html
   ConfigBucketEncryptionPolicy:
-    Type: "AWS::IAM::Policy"
+    Type: "AWS::S3::BucketPolicy"
     Properties:
+      Bucket: !Ref ConfigBucket
       PolicyDocument:
         Statement:
           -
             Action: "s3:PutObject"
             Sid: DenyUnencryptedObjectUploads
+            Effect: Deny
             Principal: "*"
-            Resource: !Sub "arn:aws:s3:::${ConfigurationS3BucketName}/*"
+            Resource: !Sub "arn:aws:s3:::${ConfigBucketName}/*"
             Condition:
               StringNotEquals:
                 !Sub |
                   "s3:x-amz-server-side-encryption-aws-kms-key-id":"aws:kms:us-east-1:${AWS::AccountId}:key/${ConfigBucketKey}"
         Version: "2012-10-17"
-  DependsOn: ConfigBucketKey
+    DependsOn:
+      - ConfigBucketKey
+      - ConfigBucket
   ConfigBucketKey:
     Type: "AWS::KMS::Key"
     # Probably need to add to policy so that lambda and RPi can use it
@@ -54,11 +56,12 @@ Resources:
         Statement:
           -
             Sid: "Allow administrators full access to key"
+            Effect: "Allow"
             Principal:
-              AWS: "arn:aws:iam::742524706181:group/Administrators"
+              AWS: "arn:aws:iam::742524706181:user/howie"
             Action:
-              - "kms:Create"
-              - "kms:Describe"
+              - "kms:Create*"
+              - "kms:Describe*"
               - "kms:Enable*"
               - "kms:Put*"
               - "kms:List*"
@@ -72,3 +75,18 @@ Resources:
             Resource: "*"
 
 Outputs:
+  ConfigBucketName:
+    Description: Name of the config
+    Value: !Ref ConfigBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-ConfigBucketName
+  LambdaCodeBucketName:
+    Description: Name of the config
+    Value: !Ref CodeBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-LambdaCodeBucketName
+  ConfigBucketKeyID:
+    Description: ID of the config bucket key
+    Value: !Ref ConfigBucketKey
+    Export:
+      Name: !Sub ${AWS::StackName}-ConfigBucketKeyID
