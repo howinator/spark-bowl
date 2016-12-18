@@ -1,0 +1,19 @@
+---
+- hosts: localhost
+  gather_facts: no
+
+  vars_files:
+    - vars/config-stack-vars.yml
+
+  tasks:
+
+    - name: configure the data stack
+      cloudformation:
+        state: present
+        stack_name: "{{ stack_name }}"
+        region: "{{ region }}"
+        template: "cfn/config-stack.yml.cform"
+        template_parameters:
+          ConfigBucketName: "{{ config_bucket_name }}"
+        tags:
+          Stack: "{{ stack_name }}"
