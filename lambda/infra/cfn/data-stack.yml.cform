@@ -29,18 +29,30 @@ Resources:
     Properties:
       Bucket: !Ref ConfigBucket
       PolicyDocument:
+        Version: "2012-10-17"
+        Id: "PutObjConfigPolicy"
         Statement:
           -
-            Action: "s3:PutObject"
-            Sid: DenyUnencryptedObjectUploads
-            Effect: Deny
+            Sid: DenyUploadNoKeyConfig
+            Action:
+              - "s3:PutObject"
+            Effect: "Deny"
             Principal: "*"
-            Resource: !Sub "arn:aws:s3:::${ConfigBucketName}/*"
+            Resource: !Sub "arn:aws:s3:::${ConfigBucket}/*"
             Condition:
               StringNotEquals:
-                !Sub |
-                  "s3:x-amz-server-side-encryption-aws-kms-key-id":"aws:kms:us-east-1:${AWS::AccountId}:key/${ConfigBucketKey}"
-        Version: "2012-10-17"
+                "s3:x-amz-server-side-encryption": "aws:kms"
+          -
+            Sid: DenyUploadCorrectKeyConfig
+            Action:
+              - "s3:PutObject"
+            Effect: "Deny"
+            Principal: "*"
+            Resource: !Sub "arn:aws:s3:::${ConfigBucket}/*"
+            Condition:
+              StringNotEquals:
+                "s3:x-amz-server-side-encryption-aws-kms-key-id":
+                  !Sub "${ConfigBucketKey.Arn}"
     DependsOn:
       - ConfigBucketKey
       - ConfigBucket
