@@ -4,6 +4,7 @@
 
   vars_files:
     - vars/lambda.yml
+    - vars/config.yml
 
   tasks:
 
@@ -17,5 +18,6 @@
           DataStackName: "{{ data_stack_name }}"
           FunctionName: "{{ base_stack_name }}_lambda_function"
           PackagePath: "{{ code_path }}"
+          AlexaApplicationId: "{{ alexa_application_id }}"
         tags:
           Stack: "{{ lambda_stack_name }}"
