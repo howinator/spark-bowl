@@ -16,6 +16,6 @@
         template_parameters:
           DataStackName: "{{ data_stack_name }}"
           FunctionName: "{{ base_stack_name }}_lambda_function"
-          PackagePath: "{{ code_path_base }}/index.zip"
+          PackagePath: "{{ code_path }}"
         tags:
           Stack: "{{ lambda_stack_name }}"

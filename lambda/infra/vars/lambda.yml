@@ -5,3 +5,6 @@ code_bucket_name: "howinator-{{ base_stack_name }}"
 data_stack_name: "{{ base_stack_name }}-data-stack"
 lambda_stack_name: "{{ base_stack_name }}-lambda-stack"
 code_path_base: "lambda-code"
+bundle_name: "deploy-bundle.zip"
+code_path: "{{ code_path_base }}/{{ bundle_name }}"
+
