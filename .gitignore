@@ -1,6 +1,7 @@
 *.sublime-project
 *.sublime-workspace
 *.retry
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

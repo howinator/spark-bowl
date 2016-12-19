@@ -90,11 +90,11 @@ Resources:
         Id: "config-s3-bucket-key"
         Statement:
           -
-            Sid: "Allow howie full access"
+            Sid: "Allow root full access"
             Effect: "Allow"
             Principal:
               AWS:
-                !Sub "arn:aws:iam::${AWS::AccountId}:root"
+                !Sub "arn:aws:iam::${AWS::AccountId}:user/howie"
             Action:
               - "kms:*"
             Resource: "*"
@@ -103,7 +103,6 @@ Resources:
             Effect: "Allow"
             Principal:
               AWS:
-                - !Sub "arn:aws:iam::${AWS::AccountId}:user/howie"
                 - !GetAtt ConfigKeyAdminRole.Arn
             Action:
               - "kms:Create*"

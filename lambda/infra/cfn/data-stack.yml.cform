@@ -3,117 +3,38 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "All the data resources for the backend"
 
 Parameters:
-  CodeBucketName:
+  GeneralBucketName:
     Description: Name of the S3 bucket to store the code in
     Type: String
     Default: "howinator-sparkabowl"
-  # This should probably be re-factored out to another `aws-setup` repo
-  ConfigBucketName:
-    Description: Name of the S3 Bucket to store configuration in
+  CodePathBase:
+    Description: Directory the code lives in
     Type: String
-    Default: "howinator-configuration"
 Resources:
-  CodeBucket:
+  GeneralBucket:
     Type: "AWS::S3::Bucket"
     Properties:
       AccessControl: Private
-      BucketName: !Ref CodeBucketName
-  ConfigBucket:
-    Type: "AWS::S3::Bucket"
-    Properties:
-      AccessControl: Private
-      BucketName: !Ref ConfigBucketName
-  # From http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingKMSEncryption.html
-  ConfigBucketEncryptionPolicy:
+      BucketName: !Ref GeneralBucketName
+  GeneralBucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
-      Bucket: !Ref ConfigBucket
+      Bucket: !Ref GeneralBucket
       PolicyDocument:
         Version: "2012-10-17"
-        Id: "PutObjConfigPolicy"
+        Id: "GetObjLambdaCodePolicy"
         Statement:
           -
-            Sid: DenyUploadNoKeyConfig
-            Action:
-              - "s3:PutObject"
-            Effect: "Deny"
-            Principal: "*"
-            Resource: !Sub "arn:aws:s3:::${ConfigBucket}/*"
-            Condition:
-              StringNotEquals:
-                "s3:x-amz-server-side-encryption": "aws:kms"
-          -
-            Sid: DenyUploadCorrectKeyConfig
-            Action:
-              - "s3:PutObject"
-            Effect: "Deny"
-            Principal: "*"
-            Resource: !Sub "arn:aws:s3:::${ConfigBucket}/*"
-            Condition:
-              StringNotEquals:
-                "s3:x-amz-server-side-encryption-aws-kms-key-id":
-                  !Sub "${ConfigBucketKey.Arn}"
-    DependsOn:
-      - ConfigBucketKey
-      - ConfigBucket
-  ConfigBucketPolicy:
-    Type: "AWS::IAM::Role"
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Action: "sts:AssumeRole"
+            Sid: "Allow lambda to access code bucket"
             Effect: "Allow"
             Principal:
-              Service:
-                "ec2.amazonaws.com"
-      Path: "/"
-      Rolename: ConfigBucketAccess
-  ConfigBucketKey:
-    Type: "AWS::KMS::Key"
-    # Probably need to add to policy so that lambda and RPi can use it
-    # http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-key.html
-    Properties:
-      Description: key for dealing with encrypted objects
-      # KeyPolicy:
-      #   Version: "2012-10-17"
-      #   Id: "config-s3-bucket-key"
-      #   Statement:
-      #     -
-      #       Sid: "Allow administrators full access to key"
-      #       Effect: "Allow"
-      #       Principal:
-      #         AWS: "arn:aws:iam::742524706181:user/howie"
-      #       Action: "*"
-      #         # - "kms:Create*"
-      #         # - "kms:Describe*"
-      #         # - "kms:Enable*"
-      #         # - "kms:Put*"
-      #         # - "kms:List*"
-      #         # - "kms:Update*"
-      #         # - "kms:Revoke*"
-      #         # - "kms:Disable*"
-      #         # - "kms:Get*"
-      #         # - "kms:Delete*"
-      #         # - "kms:ScheduleKeyDeletion"
-      #         # - "kms:CancelKeyDeletion"
-      #       Resource: "*"
-    DependsOn: ConfigKeyPolicy
-
+              Service: "lambda.amazonaws.com"
+            Action: "s3:getObject"
+            Resource: !Sub "arn:aws:s3:::${GeneralBucket}/${CodePathBase}/*"
+    DependsOn: GeneralBucket
 Outputs:
-  ConfigBucketName:
+  GABucketName:
     Description: Name of the config
-    Value: !Ref ConfigBucket
+    Value: !Ref GeneralBucket
     Export:
-      Name: !Sub ${AWS::StackName}-ConfigBucketName
-  LambdaCodeBucketName:
-    Description: Name of the config
-    Value: !Ref CodeBucket
-    Export:
-      Name: !Sub ${AWS::StackName}-LambdaCodeBucketName
-  ConfigBucketKeyID:
-    Description: ID of the config bucket key
-    Value: !Ref ConfigBucketKey
-    Export:
-      Name: !Sub ${AWS::StackName}-ConfigBucketKeyID
+      Name: !Sub ${AWS::StackName}-GABucketName
