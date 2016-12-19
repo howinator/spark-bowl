@@ -7,18 +7,5 @@
     - infra/vars/lambda.yml
 
   tasks:
-    # - file:
-    #     path: build
-    #     state: absent
-    # - file:
-    #     path: build
-    #     state: directory
-    # - command: "zip -r build/{{ bundle_name }} ../.venv-spark//lib/python2.7/site-packages/ src/"
-    # - archive:
-    #     format: zip
-    #     dest: "build/{{ bundle_name }}"
-    #     path:
-    #       - "../.venv-spark/lib/python2.7/site-packages/*"
-    #       - "src/*"
     - command: "./build-deploy-bundle.sh {{ bundle_name }}"
     - command: "aws s3 cp build/{{ bundle_name }} s3://{{ code_bucket_name }}/{{ code_path }}"
