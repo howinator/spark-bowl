@@ -1,0 +1,74 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Infrastructure template for handling Alexa calls and routing them to the RPi"
+
+Parameters:
+  FunctionName:
+    Description: The name of the lambda function for routing Alexa requests to the RPi
+    Type: String
+    Default: "sparkable-skill-function"
+  PackagePath:
+    Description: The path in the S3 bucket for the zipped python package
+    Type: String
+  DataStackName:
+    Description: The name of the data stack for cross-stack references
+    Type: String
+Resources:
+  LambdaFunctionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Sid: "AllowLambdaAssumeRole"
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        -
+          PolicyName: "AlexaSkillCloudWatchLogsAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Sid: "AllowLogging"
+                Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource:
+                  - "*"
+  AlexaSkillFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: !Ref FunctionName
+      Handler: index.handler
+      Role: !GetAtt LambdaFunctionRole.Arn
+      Description: !Sub Alexa skill code for the ${FunctionName} skill.
+      Code:
+        S3Bucket:
+          "Fn::ImportValue": !Sub ${DataStackName}-GABucketName
+        S3Key: !Ref PackagePath
+      Runtime: "python2.7"
+      Timeout: 10
+    DependsOn: LambdaFunctionRole
+  AlexaSkillFunctionPermissions:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName: !Ref FunctionName
+      Action: "lambda:InvokeFunction"
+      Principal: "alexa-appkit.amazon.com"
+    DependsOn: AlexaSkillFunction
+
+Outputs:
+  FunctionArn:
+    Description: Lambda function Arn
+    Value: !GetAtt AlexaSkillFunction.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-LambdaFunctionArn

@@ -1,0 +1,20 @@
+---
+- hosts: localhost
+  gather_facts: no
+
+  vars_files:
+    - vars/lambda.yml
+
+  tasks:
+
+    - name: configure the data stack
+      cloudformation:
+        state: present
+        stack_name: "{{ data_stack_name }}"
+        region: "{{ region }}"
+        template: "cfn/data-stack.yml.cform"
+        template_parameters:
+          GeneralBucketName: "{{ code_bucket_name }}"
+          CodePathBase: "{{ code_path_base }}"
+        tags:
+          Stack: "{{ data_stack_name }}"

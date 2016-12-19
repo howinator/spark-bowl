@@ -1,0 +1,181 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "All the data resources for the backend"
+
+Parameters:
+  # This should probably be re-factored out to another `aws-setup` repo
+  ConfigBucketName:
+    Description: Name of the S3 Bucket to store configuration in
+    Type: String
+    Default: "howinator-configuration"
+Resources:
+  ConfigBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: Private
+      BucketName: !Ref ConfigBucketName
+  # From http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingKMSEncryption.html
+  ConfigBucketEncryptionPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref ConfigBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: "PutObjConfigPolicy"
+        Statement:
+          -
+            Sid: DenyUploadNoKeyConfig
+            Action:
+              - "s3:PutObject"
+            Effect: "Deny"
+            Principal: "*"
+            Resource: !Sub "arn:aws:s3:::${ConfigBucket}/*"
+            Condition:
+              StringNotEquals:
+                "s3:x-amz-server-side-encryption": "aws:kms"
+          -
+            Sid: DenyUploadCorrectKeyConfig
+            Action:
+              - "s3:PutObject"
+            Effect: "Deny"
+            Principal: "*"
+            Resource: !Sub "arn:aws:s3:::${ConfigBucket}/*"
+            Condition:
+              StringNotEquals:
+                "s3:x-amz-server-side-encryption-aws-kms-key-id":
+                  !Sub "${ConfigBucketKey.Arn}"
+    DependsOn:
+      - ConfigBucketKey
+      - ConfigBucket
+  ConfigKeyRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Action: "sts:AssumeRole"
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "ec2.amazonaws.com"
+                - "lambda.amazonaws.com"
+              AWS:
+                !Sub "arn:aws:iam::${AWS::AccountId}:user/rpi"
+      Path: "/"
+      RoleName: ConfigKeyAccess
+  ConfigKeyAdminRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Action: "sts:AssumeRole"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                !Sub "arn:aws:iam::${AWS::AccountId}:root"
+      Path: "/"
+      RoleName: ConfigKeyAdminAccess
+  ConfigBucketKey:
+    Type: "AWS::KMS::Key"
+    # Probably need to add to policy so that lambda and RPi can use it
+    # http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-kms-key.html
+    # http://docs.aws.amazon.com/kms/latest/developerguide/key-policies.html
+    Properties:
+      Description: key for dealing with encrypted objects
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "config-s3-bucket-key"
+        Statement:
+          -
+            Sid: "Allow root full access"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                !Sub "arn:aws:iam::${AWS::AccountId}:user/howie"
+            Action:
+              - "kms:*"
+            Resource: "*"
+          -
+            Sid: "Allow key admins to admin"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !GetAtt ConfigKeyAdminRole.Arn
+            Action:
+              - "kms:Create*"
+              - "kms:Describe*"
+              - "kms:Enable*"
+              - "kms:Put*"
+              - "kms:List*"
+              - "kms:Update*"
+              - "kms:Revoke*"
+              - "kms:Disable*"
+              - "kms:Get*"
+              - "kms:Delete*"
+              - "kms:ScheduleKeyDeletion"
+              - "kms:CancelKeyDeletion"
+            Resource: "*"
+          -
+            Sid: "Allow use of the key for encrypting and decrypting"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !GetAtt ConfigKeyRole.Arn
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+              - "kms:ReEncrypt*"
+            Resource: "*"
+          -
+            Sid: "Allow attachment of persistent resources"
+            Effect: "Allow"
+            Principal:
+              AWS:
+                - !GetAtt ConfigKeyRole.Arn
+            Action:
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: "*"
+            Condition:
+              "Bool":
+                "kms:GrantIsForAWSResource": "true"
+    DependsOn:
+      - ConfigKeyRole
+      - ConfigKeyAdminRole
+Outputs:
+  ConfigBucketName:
+    Description: Name of the config
+    Value: !Ref ConfigBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-ConfigBucketName
+  ConfigBucketKeyID:
+    Description: ID of the config bucket key
+    Value: !Ref ConfigBucketKey
+    Export:
+      Name: !Sub ${AWS::StackName}-ConfigBucketKeyID
+  ConfigKeyRoleArn:
+    Description: Arn for the config key role
+    Value: !GetAtt ConfigKeyRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-ConfigKeyRoleArn
+  ConfigKeyRoleName:
+    Description: Name of the config key role
+    Value: !Ref ConfigKeyRole
+    Export:
+      Name: !Sub ${AWS::StackName}-ConfigKeyRoleName
+  ConfigKeyAdminRoleArn:
+    Description: Arn fo admin role
+    Value: !GetAtt ConfigKeyAdminRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-ConfigKeyAdminRoleArn
+  ConfigKeyAdminRoleName:
+    Description: Name of the config key admin role
+    Value: !Ref ConfigKeyAdminRole
+    Export:
+      Name: !Sub ${AWS::StackName}-ConfigKeyAdminRoleName

@@ -1,0 +1,40 @@
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "All the data resources for the backend"
+
+Parameters:
+  GeneralBucketName:
+    Description: Name of the S3 bucket to store the code in
+    Type: String
+    Default: "howinator-sparkabowl"
+  CodePathBase:
+    Description: Directory the code lives in
+    Type: String
+Resources:
+  GeneralBucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      AccessControl: Private
+      BucketName: !Ref GeneralBucketName
+  GeneralBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref GeneralBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: "GetObjLambdaCodePolicy"
+        Statement:
+          -
+            Sid: "Allow lambda to access code bucket"
+            Effect: "Allow"
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "s3:getObject"
+            Resource: !Sub "arn:aws:s3:::${GeneralBucket}/${CodePathBase}/*"
+    DependsOn: GeneralBucket
+Outputs:
+  GABucketName:
+    Description: Name of the config
+    Value: !Ref GeneralBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-GABucketName
