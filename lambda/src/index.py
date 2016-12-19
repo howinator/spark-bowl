@@ -1,6 +1,9 @@
-import json, requests, logging
+import logging
+import json
+import os
 
 import boto3
+import requests
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -9,14 +12,19 @@ logger.setLevel(logging.INFO)
 def lambda_handler(event, context):
     """ Handles the routing of events to specific event-type handler"""
 
+    expected_id = os.environ['AlexaApplicationId']
+
     try:
-        detail = event['detail']
-        request_param = detail['requestParameters']
-        event_name = detail['eventName']
+        app_id_from_event = event['session']['application']['applicationId']
+        logger.info("event.session.application.applicationId=" + app_id_from_event)
+        expected_app_id = os.environ['ALEXA_APPLICATION_ID']
+        if app_id_from_event != expected_app_id:
+            raise WrongIdException
+    except WrongIdException:
+        logger.warning("Wrong Application Id. Expected " +
+                       expected_app_id + ". Received " + app_id_from_event)
+    if event['session']['new']:
 
-
-
-def 
 
 def send_json(payload={}, https=False):
     """send the JSON to the RPi
@@ -43,3 +51,7 @@ def send_json(payload={}, https=False):
         return True
     else:
         return False
+
+
+class WrongIdException(Exception):
+    pass

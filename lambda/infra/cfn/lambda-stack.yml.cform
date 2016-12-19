@@ -13,6 +13,9 @@ Parameters:
   DataStackName:
     Description: The name of the data stack for cross-stack references
     Type: String
+  AlexaApplicationId:
+    Description: Application Id for the Alexa skill
+    Type: String
 Resources:
   LambdaFunctionRole:
     Type: "AWS::IAM::Role"
@@ -48,13 +51,16 @@ Resources:
     Type: "AWS::Lambda::Function"
     Properties:
       FunctionName: !Ref FunctionName
-      Handler: index.handler
+      Handler: index.lambda_handler
       Role: !GetAtt LambdaFunctionRole.Arn
       Description: !Sub Alexa skill code for the ${FunctionName} skill.
       Code:
         S3Bucket:
           "Fn::ImportValue": !Sub ${DataStackName}-GABucketName
         S3Key: !Ref PackagePath
+      Environment:
+        Variables:
+          ALEXA_APPLICATION_ID: !Ref AlexaApplicationId
       Runtime: "python2.7"
       Timeout: 10
     DependsOn: LambdaFunctionRole
