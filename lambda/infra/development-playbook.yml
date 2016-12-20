@@ -13,3 +13,4 @@
         - requests
         - boto3
         - chalice
+        - dotmap
