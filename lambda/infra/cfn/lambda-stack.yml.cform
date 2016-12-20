@@ -61,6 +61,7 @@ Resources:
       Environment:
         Variables:
           ALEXA_APPLICATION_ID: !Ref AlexaApplicationId
+          SPARKABOWL_DEBUG_MODE: "lambda"
       Runtime: "python2.7"
       Timeout: 10
     DependsOn: LambdaFunctionRole

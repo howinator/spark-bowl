@@ -1,16 +1,21 @@
+import os
 import unittest
+
 import index
+import auxiliary as aux
 
 
 class TestIndex(unittest.TestCase):
 
     def setUp(self):
+        self.context = {"context": "here"}
+        fake_app_id = "amzn.ask.skill.fakeappid"
         self.alexa_start = {
             "version": "1.0",
             "session": {
                 "sessionId": "SessionId.f2c7b713-5b55-45b8-9bb0-483515e9f47a",
                 "application": {
-                    "applicationId": "amzn1.ask.skill.a885349b"
+                    "applicationId": fake_app_id
                 },
                 "attributes": {},
                 "user": {
@@ -29,7 +34,7 @@ class TestIndex(unittest.TestCase):
             "session": {
                 "sessionId": "SessionId.f2c7b713-5b55-45b8-9bb0-483515e9f47a",
                 "application": {
-                    "applicationId": "amzn1.ask.skill.a885349b"
+                    "applicationId": fake_app_id
                 },
                 "attributes": {},
                 "user": {
@@ -49,7 +54,28 @@ class TestIndex(unittest.TestCase):
             },
             "version": "1.0"
         }
+        os.environ['ALEXA_APPLICATION_ID'] = fake_app_id
 
+    def tearDown(self):
+        if 'ALEXA_APPLICATION_ID' in os.environ:
+            del os.environ['ALEXA_APPLICATION_ID']
+
+    def test_no_application_id(self):
+        del os.environ['ALEXA_APPLICATION_ID']
+        with self.assertRaises(KeyError):
+            index.lambda_handler(self.alexa_start, self.context)
+
+    def test_session_dne(self):
+        bad_event = {"howie": "number_one"}
+        with self.assertRaises(KeyError):
+            index.lambda_handler(bad_event, self.context)
+
+    def test_bad_app_id(self):
+        self.alexa_start['session']['application']['applicationId'] = 'bad'
+        with self.assertRaises(aux.WrongApplicationIdException):
+            index.lambda_handler(self.alexa_start, self.context)
+
+    @unittest.skip("functionality not implemented yet")
     def testSendJSON(self):
         json_to_send = {"feedDogs": "True"}
         result = index.send_json(json_to_send, https=False)
