@@ -1,6 +1,8 @@
 import os
 import unittest
 
+from mock import patch, Mock
+
 import index
 import auxiliary as aux
 
@@ -54,14 +56,14 @@ class TestIndex(unittest.TestCase):
             },
             "version": "1.0"
         }
-        os.environ['ALEXA_APPLICATION_ID'] = fake_app_id
+        self.env_patch = patch.dict('os.environ', {'ALEXA_APPLICATION_ID': fake_app_id})
+        self.env_patch.start()
 
     def tearDown(self):
-        if 'ALEXA_APPLICATION_ID' in os.environ:
-            del os.environ['ALEXA_APPLICATION_ID']
+        self.env_patch.stop()
 
     def test_no_application_id(self):
-        del os.environ['ALEXA_APPLICATION_ID']
+        self.env_patch.stop()
         with self.assertRaises(KeyError):
             index.lambda_handler(self.alexa_start, self.context)
 
@@ -74,6 +76,12 @@ class TestIndex(unittest.TestCase):
         self.alexa_start['session']['application']['applicationId'] = 'bad'
         with self.assertRaises(aux.WrongApplicationIdException):
             index.lambda_handler(self.alexa_start, self.context)
+
+    @patch('index.on_session_started')
+    def test_on_session_started_called(self, index_mock):
+        index.lambda_handler(self.alexa_start, self.context)
+        index_mock.assert_called_with({'requestId': self.alexa_start['request']['requestId'],
+                                       'sessionId': self.alexa_start['session']['sessionId']})
 
     @unittest.skip("functionality not implemented yet")
     def testSendJSON(self):

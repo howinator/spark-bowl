@@ -4,8 +4,8 @@ import json
 import os
 
 import boto3
+from cryptography.fernet import Fernet
 import requests
-from dotmap import DotMap
 
 import auxiliary as aux
 
@@ -16,20 +16,16 @@ logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     """ Handles the routing of events to specific event-type handler"""
-
-    event = DotMap(event)
-
     try:
         expected_app_id = os.environ['ALEXA_APPLICATION_ID']
     except KeyError as e:
         log_string = "Could not find alexa application id in environment {excp}".format(excp=e)
         logger.error(log_string)
         raise
-
     try:
         if 'session' not in event:
             raise KeyError
-        app_id_from_event = event.session.application.applicationId
+        app_id_from_event = event['session']['application']['applicationId']
         logger.info("event.session.application.applicationId=" + app_id_from_event)
         expected_app_id = os.environ['ALEXA_APPLICATION_ID']
         if app_id_from_event != expected_app_id:
@@ -42,8 +38,26 @@ def lambda_handler(event, context):
                        expected_app_id + ". Received " + app_id_from_event +
                        ". Thrown Exception %s", e)
         raise
-    if event.session.new:
-        on_session_started({requestId: event.request.requestId})
+
+    if event['session']['new']:
+        on_session_started({'requestId': event['request']['requestId'],
+                            'sessionId': event['session']['sessionId']})
+
+
+def on_session_started(event_ids, session):
+    logger.info("New session with session id: %s and request id: %s",
+                event_ids['sessionId'], event_ids['requestId'])
+
+
+def encrypt_access_key():
+
+    access_key = os.environ['SPARKABOWL_ACCESS_KEY']
+    secret_key = os.environ['SPARKABOWL_SECRET_KEY']
+
+    f = Fernet(secret_key)
+    token = f.encrypt(access_key)
+
+    return token
 
 
 def send_json(payload={}, https=False):
