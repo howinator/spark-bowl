@@ -16,6 +16,12 @@ Parameters:
   AlexaApplicationId:
     Description: Application Id for the Alexa skill
     Type: String
+  SparkabowlAccessKey:
+    Description: Key for validating requests between RPi and Lambda
+    Type: String
+  SparkabowlSecretKey:
+    Description: Key for encrypting access Key
+    Type: String
 Resources:
   LambdaFunctionRole:
     Type: "AWS::IAM::Role"
@@ -62,6 +68,8 @@ Resources:
         Variables:
           ALEXA_APPLICATION_ID: !Ref AlexaApplicationId
           SPARKABOWL_DEBUG_MODE: "lambda"
+          SPARKABOWL_ACCESS_KEY: !Ref SparkabowlAccessKey
+          SPARKABOWL_SECRET_KEY: !Ref SparkabowlSecretKey
       Runtime: "python2.7"
       Timeout: 10
     DependsOn: LambdaFunctionRole
