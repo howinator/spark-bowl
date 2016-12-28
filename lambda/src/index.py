@@ -23,15 +23,17 @@ def lambda_handler(event, context):
         logger.error(log_string)
         raise
     try:
-        if 'session' not in event:
+        if not all(k in event for k in ('request', 'session')):
             raise KeyError
-        app_id_from_event = event['session']['application']['applicationId']
+        request = event['request']
+        session = event['session']
+        app_id_from_event = session['application']['applicationId']
         logger.info("event.session.application.applicationId=" + app_id_from_event)
         expected_app_id = os.environ['ALEXA_APPLICATION_ID']
         if app_id_from_event != expected_app_id:
             raise aux.WrongApplicationIdException
     except KeyError as e:
-        logger.error("'session' not found in event: %s", e)
+        logger.error("'session' or 'request' not found in event: %s", e)
         raise
     except aux.WrongApplicationIdException as e:
         logger.warning("Wrong Application Id. Expected " +
@@ -39,14 +41,33 @@ def lambda_handler(event, context):
                        ". Thrown Exception %s", e)
         raise
 
-    if event['session']['new']:
-        on_session_started({'requestId': event['request']['requestId'],
-                            'sessionId': event['session']['sessionId']})
+    if session['new']:
+        on_session_started({'requestId': request['requestId'],
+                            'sessionId': session['sessionId']}, session)
+
+    if request['type'] == 'LaunchRequest':
+        return on_launch(request, session)
+    elif request['type'] == 'IntentRequest':
+        return on_intent(request, session)
+    elif request['type'] == 'SessionEndedRequest':
+        return on_session_ended(request, session)
 
 
 def on_session_started(event_ids, session):
     logger.info("New session with session id: %s and request id: %s",
                 event_ids['sessionId'], event_ids['requestId'])
+
+
+def on_launch(request, session):
+    return True
+
+
+def on_intent(request, session):
+    return True
+
+
+def on_session_ended(request, session):
+    return True
 
 
 def encrypt_access_key():
