@@ -56,6 +56,7 @@ class TestIndex(unittest.TestCase):
             },
             "version": "1.0"
         }
+        self.end_session = {'request': {}, 'session': {}}
         self.env_patch = patch.dict('os.environ', {'ALEXA_APPLICATION_ID': fake_app_id})
         self.env_patch.start()
 
@@ -81,7 +82,25 @@ class TestIndex(unittest.TestCase):
     def test_on_session_started_called(self, index_mock):
         index.lambda_handler(self.alexa_start, self.context)
         index_mock.assert_called_with({'requestId': self.alexa_start['request']['requestId'],
-                                       'sessionId': self.alexa_start['session']['sessionId']})
+                                       'sessionId': self.alexa_start['session']['sessionId']},
+                                      self.alexa_start['session'])
+
+    @patch('index.on_launch')
+    def test_on_launch_called(self, index_mock):
+        index.lambda_handler(self.alexa_start, self.context)
+        index_mock.assert_called_with(self.alexa_start['request'], self.alexa_start['session'])
+
+    @patch('index.on_intent')
+    def test_on_intent_called(self, index_mock):
+        index.lambda_handler(self.alexa_feed_dogs, self.context)
+        index_mock.assert_called_with(
+            self.alexa_feed_dogs['request'], self.alexa_feed_dogs['session'])
+
+    @unittest.skip("don't know what end session request looks like")
+    @patch('index.on_session_ended')
+    def test_on_session_ended_called(self, index_mock):
+        index.lambda_handler(self.end_session, self.context)
+        index_mock.assert_called_with(self.end_session['request'], self.end_session['session'])
 
     @unittest.skip("functionality not implemented yet")
     def testSendJSON(self):
