@@ -59,7 +59,7 @@ def on_session_started(event_ids, session):
 
 
 def on_launch(request, session):
-    return True
+    return get_welcome_response()
 
 
 def on_intent(request, session):
@@ -68,6 +68,46 @@ def on_intent(request, session):
 
 def on_session_ended(request, session):
     return True
+
+
+def get_welcome_response():
+    session_attributes = {}
+    card_title = "Welcome to Sparkabowl!"
+    speech_output = "Welcome to the Sparkabowl skill. " \
+                    "You can ask me to feed the dog."
+    reprompt_text = "Please ask me to feed the dog."
+    should_end_session = False
+    return build_response(session_attributes, build_speechlet_response(
+        card_title, speech_output, reprompt_text, should_end_session))
+
+
+def build_speechlet_response(title, output, reprompt_text, should_end_session):
+    return {
+        "outputSpeech": {
+            "type": "PlainText",
+            "text": output
+        },
+        "card": {
+            "type": "Simple",
+            "title": title,
+            "content": output
+        },
+        "reprompt": {
+            "outputSpeech": {
+                "type": "PlainText",
+                "text": reprompt_text
+            }
+        },
+        "shouldEndSession": should_end_session
+    }
+
+
+def build_response(session_attributes, speechlet_response):
+    return {
+        "version": "1.0",
+        "sessionAttributes": session_attributes,
+        "response": speechlet_response
+    }
 
 
 def encrypt_access_key():

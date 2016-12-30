@@ -1,0 +1,2 @@
+base_deploy_dir: "/home/ec2-user"
+deploy_dir: "{{ base_deploy_dir }}/project"

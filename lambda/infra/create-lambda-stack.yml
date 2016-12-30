@@ -16,7 +16,7 @@
         template: "cfn/lambda-stack.yml.cform"
         template_parameters:
           DataStackName: "{{ data_stack_name }}"
-          FunctionName: "{{ base_stack_name }}_lambda_function"
+          FunctionName: "{{ lambda_function_name }}"
           PackagePath: "{{ code_path }}"
           AlexaApplicationId: "{{ alexa_application_id }}"
           SparkabowlAccessKey: "{{ sparkabowl_access_key }}"

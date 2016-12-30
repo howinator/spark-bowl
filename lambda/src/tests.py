@@ -102,6 +102,39 @@ class TestIndex(unittest.TestCase):
         index.lambda_handler(self.end_session, self.context)
         index_mock.assert_called_with(self.end_session['request'], self.end_session['session'])
 
+    def test_build_speechlet_response(self):
+        output = "here's a string"
+        title = "stuff"
+        reprompt = "some more stuff"
+        should_end = False
+        expected = {
+            "outputSpeech": {
+                "type": "PlainText",
+                "text": output
+            },
+            "card": {
+                "type": "Simple",
+                "title": title,
+                "content": output
+            },
+            "reprompt": {
+                "outputSpeech": {
+                    "type": "PlainText",
+                    "text": reprompt
+                }
+            },
+            "shouldEndSession": should_end
+        }
+        self.assertEqual(index.build_speechlet_response(
+            title, output, reprompt, should_end), expected)
+
+    def test_build_response(self):
+        attributes = {"howie": "cool"}
+        response = {"howie": "super"}
+        expected = {"version": "1.0",
+                    "sessionAttributes": attributes, "response": response}
+        self.assertEqual(index.build_response(attributes, response), expected)
+
     @unittest.skip("functionality not implemented yet")
     def testSendJSON(self):
         json_to_send = {"feedDogs": "True"}

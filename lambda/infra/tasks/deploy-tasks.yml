@@ -1,0 +1,3 @@
+---
+
+- command: "{{ deploy_dir }}/build-deploy-bundle.sh {{ bundle_name }} {{ deploy_dir }}"
