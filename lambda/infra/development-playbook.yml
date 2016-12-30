@@ -3,23 +3,9 @@
   gather_facts: no
 
   vars:
-    venv_name: ".venv-spark"
+    venv_name: ".venv-spark-mac"
+    venv_path: "{{ playbook_dir }}/../../{{ venv_name }}"
 
   tasks:
-    - name: destroy virtualenv
-      file:
-        path: "{{ playbook_dir }}/../../{{ venv_name }}"
-        state: absent
 
-    - name: make virtualenv
-      pip:
-        name: "{{ item }}"
-        virtualenv: "{{ playbook_dir }}/../../{{ venv_name }}"
-        virtualenv_command: virtualenv
-        virtualenv_python: python2.7
-      with_items:
-        - requests
-        - boto3
-        - chalice
-        - cryptography
-        - mock
+    - include: tasks/virtualenv-tasks.yml

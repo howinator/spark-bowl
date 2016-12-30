@@ -1,0 +1,112 @@
+---
+- hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars_files:
+    - vars/lambda.yml
+
+  tasks:
+
+    - name: delte local build directory
+      file:
+        path: ../build/
+        state: absent
+
+    - name: provision an instance
+      ec2:
+        key_name: Macid_rsa
+        group: ssh
+        instance_type: t2.nano
+        image: ami-9be6f38c
+        wait: true
+        region: "{{ region }}"
+        instance_tags:
+          name: build_sparkabowl
+      register: ec2
+
+    - name: Add instance to ec2hosts
+      add_host: hostname={{ item.public_ip }} groups=ec2hosts
+      with_items: "{{ ec2.instances }}"
+
+    - wait_for:
+        port: 22
+        host: "{{ item.public_ip }}"
+        delay: 10
+      with_items: "{{ ec2.instances }}"
+
+- hosts: ec2hosts
+  user: ec2-user
+  become: yes
+  gather_facts: true
+
+  vars_files:
+    - vars/deploy-vars.yml
+    - vars/lambda.yml
+
+  vars:
+    venv_name: ".venv-spark"
+    venv_path: "{{ deploy_dir }}/{{ venv_name }}"
+
+  tasks:
+    - yum:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      with_items:
+        - "@Development tools"
+        - python27-devel.x86_64
+        - libffi.x86_64
+        - python27-pip.noarch
+        - libffi-devel.x86_64
+        - openssl-devel.x86_64
+
+    - name: install virtualenv
+      pip:
+        name: "{{ item }}"
+      with_items:
+        - virtualenv
+        - urllib3[secure]
+
+    - include: tasks/virtualenv-tasks.yml
+
+    - copy:
+        src: "../src/"
+        dest: "{{ deploy_dir }}/src/"
+        owner: ec2-user
+        mode: 0777
+
+    - copy:
+        src: "./build-deploy-bundle.sh"
+        dest: "{{ deploy_dir }}/build-deploy-bundle.sh"
+        owner: ec2-user
+        mode: 0777
+
+    - include: tasks/deploy-tasks.yml
+
+    - fetch:
+        src: "{{ deploy_dir }}/build/{{ bundle_name }}"
+        dest: "{{ playbook_dir }}/../build/{{ bundle_name }}"
+        flat: yes
+
+- hosts: localhost
+  connection: local
+  vars_files:
+    - vars/lambda.yml
+  tasks:
+
+    - command: "aws s3 cp {{ playbook_dir }}/../build/{{ bundle_name }} s3://{{ code_bucket_name }}/{{ code_path }}"
+    - name: get account number
+      command: "aws ec2 describe-security-groups --group-names 'Default' --query 'SecurityGroups[0].OwnerId' --output text"
+      register: throwaway
+    - name: set account number fact
+      set_fact:
+        aws_account_number: "{{ throwaway.stdout }}"
+    - name: set function arn
+      set_fact:
+        function_arn: "arn:aws:lambda:{{ region }}:{{ aws_account_number }}:function:{{ lambda_function_name }}"
+    - command: "aws lambda update-function-code --function-name {{ function_arn }} --s3-bucket {{ code_bucket_name }} --s3-key {{ code_path }}"
+    - ec2:
+        state: 'absent'
+        region: "{{ region }}"
+        instance_ids: '{{ ec2.instance_ids }}'
