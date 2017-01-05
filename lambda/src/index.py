@@ -1,4 +1,5 @@
 from __future__ import print_function
+import base64
 import logging
 import json
 import os
@@ -229,7 +230,7 @@ def get_secret_key():
 
 def get_and_encrypt_access_key():
 
-    secret_key = get_secret_key()
+    secret_key = base64.urlsafe_b64encode(get_secret_key())
 
     access_key = os.environ['SPARKABOWL_ACCESS_KEY']
 
