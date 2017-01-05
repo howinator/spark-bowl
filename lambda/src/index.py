@@ -137,7 +137,10 @@ def build_response(session_attributes, speechlet_response):
 
 def build_rpi_payload(request):
     payload = {}
-    encrypted_access_key = get_and_encrypt_access_key()
+
+    secret_key = get_secret_key()
+    access_key = os.environ['SPARKABOWL_ACCESS_KEY']
+    encrypted_access_key = encrypt_string(secret_key, access_key)
     payload['key'] = encrypted_access_key
     if request['intent']['name'] == 'FeedDogsIntent':
         sub_payload = build_feed_now_payload()
@@ -181,15 +184,6 @@ def download_file_from_s3(s3_bucket, s3_key, credentials=None):
                 s3_bucket, s3_key, download_path, e))
         raise
 
-    # s3_client = boto3.client('s3', config=botocore.client.Config(signature_version='s3v4'))
-    # try:
-    #     s3_client.download_file(s3_bucket, s3_key, download_path)
-    # except botocore.exceptions.ClientError as e:
-    #     logger.error(
-    #         "Something went wrong with downloading the {}/{} file to {}\n{}".format(
-    #             s3_bucket, s3_client, download_path, e))
-    #     raise
-
     return download_path
 
 
@@ -228,14 +222,12 @@ def get_secret_key():
     return secret_key
 
 
-def get_and_encrypt_access_key():
+def encrypt_string(key, string):
 
-    secret_key = base64.urlsafe_b64encode(get_secret_key())
+    encoded_key = base64.urlsafe_b64encode(key)
 
-    access_key = os.environ['SPARKABOWL_ACCESS_KEY']
-
-    f = Fernet(secret_key)
-    token = f.encrypt(access_key)
+    f = Fernet(encoded_key)
+    token = f.encrypt(string)
 
     return token
 
@@ -249,6 +241,9 @@ def send_json_to_rpi(payload, https=False):
     # TODO FIXME This is so screwed up and dangerous - it needs to be fixed asap
     # Probably needs to be doing something like this
     # http://stackoverflow.com/questions/6999565/python-https-get-with-basic-authentication
+
+    # FIXME mocking out return value to get this to work
+    return True
     router_dns_name = 'howinator.dynalias.com'
     http_rpi_port = 40070
     https_rpi_port = 40071
