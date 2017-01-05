@@ -56,17 +56,6 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource:
                   - "*"
-              -
-                Sid: "AllowGetConfigBucket"
-                Effect: "Allow"
-                Action:
-                  - "s3:GetObject"
-                Resource:
-                  - !Sub
-                    - "arn:aws:s3:::${ConfigBucketName}/*"
-                    -
-                      ConfigBucketName:
-                        "Fn::ImportValue": !Sub ${ConfigStackName}-ConfigBucketName
   AlexaSkillFunction:
     Type: "AWS::Lambda::Function"
     Properties:
