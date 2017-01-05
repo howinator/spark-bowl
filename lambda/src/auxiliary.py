@@ -6,6 +6,16 @@ class WrongApplicationIdException(Exception):
     pass
 
 
+class NoValidIntent(Exception):
+    pass
+
+
+def merge_two_dicts(x, y):
+    merged = x.copy()
+    merged.update(y)
+    return merged
+
+
 def set_logger():
     if 'SPARKABOWL_DEBUG_MODE' not in os.environ:
         dev_env = True

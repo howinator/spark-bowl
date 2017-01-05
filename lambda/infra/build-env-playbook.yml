@@ -49,7 +49,8 @@
     venv_path: "{{ deploy_dir }}/{{ venv_name }}"
 
   tasks:
-    - yum:
+    - name: install the requisite packages
+      yum:
         name: "{{ item }}"
         state: present
         update_cache: yes
@@ -70,13 +71,15 @@
 
     - include: tasks/virtualenv-tasks.yml
 
-    - copy:
+    - name: copy the source code to the instance
+      copy:
         src: "../src/"
         dest: "{{ deploy_dir }}/src/"
         owner: ec2-user
         mode: 0777
 
-    - copy:
+    - name: copy the deploy bundle script to the instance
+      copy:
         src: "./build-deploy-bundle.sh"
         dest: "{{ deploy_dir }}/build-deploy-bundle.sh"
         owner: ec2-user
@@ -84,29 +87,41 @@
 
     - include: tasks/deploy-tasks.yml
 
-    - fetch:
+    - name: download the deployment bundle to local machine
+      fetch:
         src: "{{ deploy_dir }}/build/{{ bundle_name }}"
         dest: "{{ playbook_dir }}/../build/{{ bundle_name }}"
         flat: yes
 
 - hosts: localhost
   connection: local
+
   vars_files:
     - vars/lambda.yml
+
   tasks:
 
-    - command: "aws s3 cp {{ playbook_dir }}/../build/{{ bundle_name }} s3://{{ code_bucket_name }}/{{ code_path }}"
+    - name: copy the bundle to s3
+      command: "aws s3 cp {{ playbook_dir }}/../build/{{ bundle_name }} s3://{{ code_bucket_name }}/{{ code_path }}"
+
     - name: get account number
       command: "aws ec2 describe-security-groups --group-names 'Default' --query 'SecurityGroups[0].OwnerId' --output text"
       register: throwaway
+
     - name: set account number fact
       set_fact:
         aws_account_number: "{{ throwaway.stdout }}"
+
     - name: set function arn
       set_fact:
         function_arn: "arn:aws:lambda:{{ region }}:{{ aws_account_number }}:function:{{ lambda_function_name }}"
-    - command: "aws lambda update-function-code --function-name {{ function_arn }} --s3-bucket {{ code_bucket_name }} --s3-key {{ code_path }}"
-    - ec2:
+
+    - name: update the lambda function
+      command: "aws lambda update-function-code --function-name {{ function_arn }} --s3-bucket {{ code_bucket_name }} --s3-key {{ code_path }}"
+
+    - name: kill the ec2 instance
+      ec2:
         state: 'absent'
         region: "{{ region }}"
         instance_ids: '{{ ec2.instance_ids }}'
+

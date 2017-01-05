@@ -1,6 +1,7 @@
 base_stack_name: "sparkabowl"
 region: "us-east-1"
 config_bucket_name: "howinator-config"
+config_file_path: "{{ base_stack_name }}/config.yml"
 code_bucket_name: "howinator-{{ base_stack_name }}"
 data_stack_name: "{{ base_stack_name }}-data-stack"
 lambda_stack_name: "{{ base_stack_name }}-lambda-stack"

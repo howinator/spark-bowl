@@ -5,6 +5,8 @@
   vars_files:
     - vars/lambda.yml
     - vars/config.yml
+    - vars/access-key.yml
+    - vars/config-stack-vars.yml
 
   tasks:
 
@@ -16,10 +18,11 @@
         template: "cfn/lambda-stack.yml.cform"
         template_parameters:
           DataStackName: "{{ data_stack_name }}"
+          ConfigStackName: "{{ config_stack_name }}"
+          ConfigFilePath: "{{ config_file_path }}"
           FunctionName: "{{ lambda_function_name }}"
           PackagePath: "{{ code_path }}"
           AlexaApplicationId: "{{ alexa_application_id }}"
           SparkabowlAccessKey: "{{ sparkabowl_access_key }}"
-          SparkabowlSecretKey: "{{ sparkabowl_secret_key }}"
         tags:
           Stack: "{{ lambda_stack_name }}"

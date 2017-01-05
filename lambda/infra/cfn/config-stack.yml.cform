@@ -8,6 +8,10 @@ Parameters:
     Description: Name of the S3 Bucket to store configuration in
     Type: String
     Default: "howinator-configuration"
+  LambdaStackName:
+    Description: Name of the lambda stack
+    Type: String
+    Default: "sparkabowl-lambda-stack"
 Resources:
   ConfigBucket:
     Type: "AWS::S3::Bucket"
@@ -61,7 +65,19 @@ Resources:
                 - "ec2.amazonaws.com"
                 - "lambda.amazonaws.com"
               AWS:
-                !Sub "arn:aws:iam::${AWS::AccountId}:user/rpi"
+                - !Sub "arn:aws:iam::${AWS::AccountId}:user/rpi"
+                - !Sub "arn:aws:iam::${AWS::AccountId}:user/howie"
+                - "Fn::ImportValue": !Sub ${LambdaStackName}-LambdaRoleArn
+      Policies:
+        -
+          PolicyName: "AllowAssumedRoleGetConfig"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action: "s3:GetObject"
+                Resource: !Sub "arn:aws:s3:::${ConfigBucket}/*"
       Path: "/"
       RoleName: ConfigKeyAccess
   ConfigKeyAdminRole:
@@ -170,7 +186,7 @@ Outputs:
     Export:
       Name: !Sub ${AWS::StackName}-ConfigKeyRoleName
   ConfigKeyAdminRoleArn:
-    Description: Arn fo admin role
+    Description: Arn of admin role
     Value: !GetAtt ConfigKeyAdminRole.Arn
     Export:
       Name: !Sub ${AWS::StackName}-ConfigKeyAdminRoleArn

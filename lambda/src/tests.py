@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from mock import patch, Mock
+from mock import patch
 
 import index
 import auxiliary as aux
@@ -88,19 +88,22 @@ class TestIndex(unittest.TestCase):
     @patch('index.on_launch')
     def test_on_launch_called(self, index_mock):
         index.lambda_handler(self.alexa_start, self.context)
-        index_mock.assert_called_with(self.alexa_start['request'], self.alexa_start['session'])
+        index_mock.assert_called_with(launch_request=self.alexa_start[
+                                      'request'], session=self.alexa_start['session'])
 
     @patch('index.on_intent')
     def test_on_intent_called(self, index_mock):
         index.lambda_handler(self.alexa_feed_dogs, self.context)
         index_mock.assert_called_with(
-            self.alexa_feed_dogs['request'], self.alexa_feed_dogs['session'])
+            intent_request=self.alexa_feed_dogs['request'],
+            session=self.alexa_feed_dogs['session'])
 
     @unittest.skip("don't know what end session request looks like")
     @patch('index.on_session_ended')
     def test_on_session_ended_called(self, index_mock):
         index.lambda_handler(self.end_session, self.context)
-        index_mock.assert_called_with(self.end_session['request'], self.end_session['session'])
+        index_mock.assert_called_with(end_request=self.end_session[
+                                      'request'], session=self.end_session['session'])
 
     def test_build_speechlet_response(self):
         output = "here's a string"
@@ -134,6 +137,28 @@ class TestIndex(unittest.TestCase):
         expected = {"version": "1.0",
                     "sessionAttributes": attributes, "response": response}
         self.assertEqual(index.build_response(attributes, response), expected)
+
+    def test_download_file(self):
+        downloaded_file = index.download_file_from_s3('howinator-config', 'test/test.yml')
+        print(downloaded_file)
+        with open(downloaded_file) as f:
+            assert f.read() == 'sparkabowl_secret_key: testvalue\n'
+
+    def test_get_secret_key(self):
+        s3_env_patch = patch.dict(
+            'os.environ', {'CONFIG_BUCKET_NAME': 'howinator-config',
+                           'CONFIG_FILE_PATH': 'test/test.yml',
+                           'CONFIG_KEY_ROLE_ARN': 'arn:aws:iam::742524706181:role/ConfigKeyAccess'})
+        s3_env_patch.start()
+        self.assertEqual(index.get_secret_key(), 'testvalue')
+        s3_env_patch.stop()
+
+    @patch('index.feed_dogs_handler')
+    def test_feed_dogs_intent(self, index_mock):
+        intent_request = self.alexa_feed_dogs['request']
+        intent_session = self.alexa_feed_dogs['session']
+        index.on_intent(intent_request=intent_request, session=intent_session)
+        index_mock.assert_called_with(request=intent_request, session=intent_session)
 
     @unittest.skip("functionality not implemented yet")
     def testSendJSON(self):
