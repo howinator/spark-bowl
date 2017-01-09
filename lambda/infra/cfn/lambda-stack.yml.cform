@@ -13,14 +13,17 @@ Parameters:
   DataStackName:
     Description: The name of the data stack for cross-stack references
     Type: String
+  ConfigStackName:
+    Description: The name of the config stack
+    Type: String
+  ConfigFilePath:
+    Description: S3 Key for the config file
+    Type: String
   AlexaApplicationId:
     Description: Application Id for the Alexa skill
     Type: String
   SparkabowlAccessKey:
     Description: Key for validating requests between RPi and Lambda
-    Type: String
-  SparkabowlSecretKey:
-    Description: Key for encrypting access Key
     Type: String
 Resources:
   LambdaFunctionRole:
@@ -69,7 +72,11 @@ Resources:
           ALEXA_APPLICATION_ID: !Ref AlexaApplicationId
           SPARKABOWL_DEBUG_MODE: "lambda"
           SPARKABOWL_ACCESS_KEY: !Ref SparkabowlAccessKey
-          SPARKABOWL_SECRET_KEY: !Ref SparkabowlSecretKey
+          CONFIG_BUCKET_NAME:
+            "Fn::ImportValue": !Sub ${ConfigStackName}-ConfigBucketName
+          CONFIG_FILE_PATH: !Ref ConfigFilePath
+          CONFIG_KEY_ROLE_ARN:
+            "Fn::ImportValue": !Sub ${ConfigStackName}-ConfigKeyRoleArn
       Runtime: "python2.7"
       Timeout: 10
     DependsOn: LambdaFunctionRole
@@ -87,3 +94,13 @@ Outputs:
     Value: !GetAtt AlexaSkillFunction.Arn
     Export:
       Name: !Sub ${AWS::StackName}-LambdaFunctionArn
+  LambdaRoleArn:
+    Description: Lambda execution role arn
+    Value: !GetAtt LambdaFunctionRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-LambdaRoleArn
+  LambdaRoleName:
+    Description: Lambda function role name
+    Value: !Ref LambdaFunctionRole
+    Export:
+      Name: !Sub ${AWS::StackName}-LambdaRoleName

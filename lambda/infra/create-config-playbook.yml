@@ -10,10 +10,10 @@
     - name: configure the data stack
       cloudformation:
         state: present
-        stack_name: "{{ stack_name }}"
+        stack_name: "{{ config_stack_name }}"
         region: "{{ region }}"
         template: "cfn/config-stack.yml.cform"
         template_parameters:
           ConfigBucketName: "{{ config_bucket_name }}"
         tags:
-          Stack: "{{ stack_name }}"
+          Stack: "{{ config_stack_name }}"
