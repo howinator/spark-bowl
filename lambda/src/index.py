@@ -95,7 +95,7 @@ def feed_dogs_handler(request, session):
     session_attributes = {}
     reprompt_text = ''
     if send_status:
-        speech_output = 'Dogs have been fed. Yay!'
+        speech_output = 'Dogs have been fed. Wooooo!'
         card_title = 'Dogs have been fed!'
         should_end_session = True
     else:
@@ -242,8 +242,6 @@ def send_json_to_rpi(payload, https=False):
     # Probably needs to be doing something like this
     # http://stackoverflow.com/questions/6999565/python-https-get-with-basic-authentication
 
-    # FIXME mocking out return value to get this to work
-    return True
     router_dns_name = 'howinator.dynalias.com'
     http_rpi_port = 40070
     https_rpi_port = 40071
