@@ -1,0 +1,10 @@
+---
+- name: set up development environment
+  hosts: localhost
+
+  vars_files:
+    - vars/common-vars.yml
+
+  tasks:
+    - command: "go get -u {{ item }}"
+      with_items: "{{ required_packages }}"

@@ -1,0 +1,4 @@
+---
+required_packages:
+  - github.com/stianeikeland/go-rpio
+  - github.com/aws/aws-sdk-go

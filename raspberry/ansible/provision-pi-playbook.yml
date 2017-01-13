@@ -13,8 +13,15 @@
           comment: "Ernie Forzano"
         - name: etam
           comment: "Emily Tam"
+        - name: sparkabowl
+          comment: "Sparkabowl"
+
+    - amazon_credentials:
+        access_key_id: "{{ lookup('csvfile', 'rpi file=vars/aws-creds.csv delimiter=, col=2') }}"
+        secret_access_key: "{{ lookup('csvfile', 'rpi file=vars/aws-creds.csv delimiter=, col=3') }}"
   vars_files:
     - vars/pi-vault.yml
+    - vars/common-vars.yml
 
 
   tasks:
@@ -62,8 +69,11 @@
 
     - name: copy ssh key to authorized keys
       authorized_key:
-        user: howinator
+        user: "{{ item }}"
         key: "{{ lookup('file', '/Users/howie/.ssh/id_rsa.pub') }}"
+      with_items:
+        - howinator
+        - sparkabowl
 
     - name: make go workspace
       file:
@@ -86,6 +96,8 @@
         dest: /etc/ssh/sshd_config
         regexp: '^Port [0-9]+'
         line: 'Port 50069'
+      notify:
+        - restart ssh
 
     - name: install apt packages
       apt:
@@ -94,6 +106,7 @@
         update_cache: yes
       with_items:
         - vim
+        - awscli
 
     - name: set name of go binary to download
       set_fact:
@@ -120,13 +133,37 @@
         - "{{ pi_users }}"
 
     - name: get echo package
-      command: "go get -u github.com/labstack/echo"
+      command: "go get -u {{ item }}"
       environment:
-        GOPATH: "/home/howinator/work"
+        GOPATH: "/home/sparkabowl/work"
         PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+      with_items: "{{ required_packages }}"
 
+    - name: create sparkabowl .aws directory
+      file:
+        path: "/home/{{ item.name }}/.aws"
+        owner: "{{ item.name }}"
+        group: users
+        mode: 0755
+        state: directory
+      with_items: "{{ pi_users }}"
+
+    - name: copy aws credential/config files over
+      template:
+        src: "templates/{{ item.src_file }}"
+        dest: "/home/sparkabowl/.aws/{{ item.dest_file }}"
+        owner: sparkabowl
+        group: users
+        mode: 0600
+      with_items:
+        - { src_file: 'aws-credentials.j2', dest_file: 'credentials' }
+        - { src_file: 'config.j2', dest_file: 'config' }
+
+    # - name: restart ssh
+    #   service:
+    #     name: sshd
+    #     state: restarted
+  handlers:
     - name: restart ssh
-      service:
-        name: sshd
-        state: restarted
+      service: name=sshd state=restarted
 
