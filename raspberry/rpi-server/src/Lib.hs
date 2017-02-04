@@ -1,6 +1,8 @@
 module Lib
-    ( someFunc
-    ) where
+  ( runServer
+  ) where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+import ServerAPI
+
+runApp :: IO ()
+runApp = runServer
