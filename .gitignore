@@ -71,6 +71,9 @@ instance/
 # Sphinx documentation
 docs/_build/
 
+# Haskell Stack deps / executable
+raspberry/rpi-server/.stack-work
+
 # PyBuilder
 target/
 
