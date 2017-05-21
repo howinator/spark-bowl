@@ -13,6 +13,8 @@
           comment: "Ernie Forzano"
         - name: etam
           comment: "Emily Tam"
+
+    - pi_ssh_port: 50069
   vars_files:
     - vars/pi-vault.yml
 
@@ -85,7 +87,9 @@
       lineinfile:
         dest: /etc/ssh/sshd_config
         regexp: '^Port [0-9]+'
-        line: 'Port 50069'
+        line: 'Port {{ pi_ssh_port }}'
+      notify:
+        - restart ssh
 
     - name: install apt packages
       apt:
@@ -94,6 +98,8 @@
         update_cache: yes
       with_items:
         - vim
+        - llvm-3.7
+        - screen
 
     - name: set name of go binary to download
       set_fact:
@@ -119,14 +125,39 @@
       with_items:
         - "{{ pi_users }}"
 
-    - name: get echo package
-      command: "go get -u github.com/labstack/echo"
-      environment:
-        GOPATH: "/home/howinator/work"
-        PATH: "{{ ansible_env.PATH }}:/usr/local/go/bin"
+    - name: making symlinks
+      file:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        state: link
+      with_items:
+        - { src: /usr/bin/opt-3.7, dest: /usr/bin/opt }
+        - { src: /usr/bin/llc-3.7, dest: /usr/bin/llc }
 
+    - block:
+      - name: Check to see if haskell files exist
+        stat:
+          path: ~/.stack/programs/arm-linux/ghc-8.0.1/bin/ghc
+        register: ghc
+
+      - name: Install Haskell stack
+        shell: 'curl -sSL https://get.haskellstack.org/ | sh'
+        when: ghc.stat.exists == False
+
+      - block:
+        - name: Install GHC and GHCi
+          shell: "stack update && stack setup"
+        always:
+        - name: Change setting in haskell settings to get it to work
+          lineinfile:
+            dest: "~/.stack/programs/arm-linux/ghc-8.0.1/lib/ghc-8.0.1/settings"
+            regexp: "^.*C compiler flags.*"
+            line: |
+              ("C compiler flags", " -marm -fno-stack-protector -mcpu=cortex-a7"),
+      become_user: howinator
+
+  handlers:
     - name: restart ssh
       service:
-        name: sshd
+        name: ssh
         state: restarted
-
