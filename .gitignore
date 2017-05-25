@@ -5,6 +5,10 @@
 build/
 config.yml
 access-key.yml
+rpi-credentials.csv
+*credentials*.csv
+*creds*.csv
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -70,9 +74,6 @@ instance/
 
 # Sphinx documentation
 docs/_build/
-
-# Haskell Stack deps / executable
-raspberry/rpi-server/.stack-work
 
 # PyBuilder
 target/

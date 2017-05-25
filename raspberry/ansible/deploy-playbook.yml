@@ -1,0 +1,36 @@
+---
+- hosts: localhost
+  become: no
+  gather_facts: no
+
+  vars:
+    - dist_dir: "{{ playbook_dir }}/../dist"
+    - app_code_dir: "rpi-server"
+
+  tasks:
+    - name: Ensure dist directory is clean before we start
+      file:
+        path: "{{ dist_dir }}"
+        state: absent
+
+    - name: Make dist directory
+      file:
+        path: "{{ dist_dir }}"
+        state: directory
+
+    - name: Create the tar ball
+      command: "tar -cvf {{ dist_dir }}/{{ app_code_dir }}.tar --exclude '.stack-work' -C {{ playbook_dir }}/../{{ app_code_dir }}/ ."
+
+- hosts: raspberries
+  become: yes
+
+  vars:
+    - bundle_name: "{{ hostvars['localhost']['app_code_dir'] }}"
+    - bundle_local_path: "{{ hostvars['localhost']['dist_dir'] }}/{{ bundle_name }}"
+    - bundle_remote_path: '/opt'
+
+  tasks:
+    - name: Copy tar ball to RPi
+      copy:
+        src: "{{ bundle_local_path }}"
+        dest: "{{ bundle_remote_path }}/{{ bundle_name }}"
