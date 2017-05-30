@@ -20,6 +20,7 @@ import Types
 
 import qualified Control.Exception as E
 import Control.Monad.Except
+import Data.ByteString.Lazy.Char8
 import Data.Time.Clock.POSIX
 import Network.Wai
 import Network.Wai.Handler.Warp
@@ -58,7 +59,7 @@ handlePinOperation :: IO () -> Handler String
 handlePinOperation operation = do
   opOrError <- liftIO operationOrError
   case opOrError of
-    Left _ -> throwError $ err500 { errBody = "Pin Operation Failed" }
+    Left e -> throwError $ err500 { errBody = pack (E.displayException e) }
     Right _ -> return "SUCCESS"
   where
     operationOrError :: IO (Either SomeGpioException ())
