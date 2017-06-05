@@ -1,11 +1,14 @@
 ---
 - hosts: localhost
   become: no
-  gather_facts: no
+  gather_facts: yes
+
+  vars_files:
+    - ../../lambda/infra/vars/lambda.yml
 
   vars:
     - dist_dir: "{{ playbook_dir }}/../dist"
-    - app_code_dir: "rpi-server"
+    - app_code_dir: "go-server"
 
   tasks:
     - name: Ensure dist directory is clean before we start
@@ -18,8 +21,16 @@
         path: "{{ dist_dir }}"
         state: directory
 
+    - name: Set full path to tar ball
+      set_fact:
+        deploy_package_filename: "{{ dist_dir }}/{{ app_code_dir }}.tar"
+
     - name: Create the tar ball
-      command: "tar -cvf {{ dist_dir }}/{{ app_code_dir }}.tar --exclude '.stack-work' -C {{ playbook_dir }}/../{{ app_code_dir }}/ ."
+      command: "tar -cvf {{ deploy_package_filename }} -C {{ playbook_dir }}/../{{ app_code_dir }}/ ."
+
+    - name: Copy tarball to s3
+      command: "aws s3 cp {{ deploy_package_filename }} {{ code_bucket_name }}/rpi/{{ ansible_date_time.iso8601 }}/{{ app_code_dir }}.tar"
+
 
 - hosts: raspberries
   become: yes
@@ -34,3 +45,5 @@
       copy:
         src: "{{ bundle_local_path }}"
         dest: "{{ bundle_remote_path }}/{{ bundle_name }}"
+
+    # - name:

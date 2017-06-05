@@ -77,7 +77,7 @@ Resources:
           CONFIG_FILE_PATH: !Ref ConfigFilePath
           CONFIG_KEY_ROLE_ARN:
             "Fn::ImportValue": !Sub ${ConfigStackName}-ConfigKeyRoleArn
-      Runtime: "python2.7"
+      Runtime: "python3.6"
       Timeout: 10
     DependsOn: LambdaFunctionRole
   AlexaSkillFunctionPermissions:

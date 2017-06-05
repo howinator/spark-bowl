@@ -1,0 +1,4 @@
+-r base.txt
+ansible==2.3.1.0
+boto
+boto3

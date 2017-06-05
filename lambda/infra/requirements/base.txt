@@ -1,0 +1,7 @@
+requests
+boto3
+chalice
+cryptography
+mock
+botocore
+pyyaml

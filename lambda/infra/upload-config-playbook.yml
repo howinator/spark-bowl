@@ -9,5 +9,5 @@
   tasks:
     - name: upload file to s3
       command: >
-       aws s3 cp {{ file }} s3://howinator-config/{{ key }} 
+       aws s3 cp {{ file }} s3://howinator-config/{{ key }}
        --sse aws:kms --sse-kms-key-id {{ config_bucket_key_id }}

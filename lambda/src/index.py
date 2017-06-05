@@ -1,7 +1,6 @@
 from __future__ import print_function
 import base64
 import logging
-import json
 import os
 import tempfile
 import yaml
