@@ -102,3 +102,6 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# Haskell
+raspberry/haskell-server/.stack-work/*
+
