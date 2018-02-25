@@ -1,13 +1,15 @@
-from __future__ import print_function
 import base64
+import hashlib
+import hmac
 import logging
 import os
 import tempfile
+
+import time
 import yaml
 
 import boto3
 import botocore
-from cryptography.fernet import Fernet
 import requests
 
 import auxiliary as aux
@@ -32,16 +34,13 @@ def lambda_handler(event, context):
         session = event['session']
         app_id_from_event = session['application']['applicationId']
         logger.info("event.session.application.applicationId=" + app_id_from_event)
-        expected_app_id = os.environ['ALEXA_APPLICATION_ID']
         if app_id_from_event != expected_app_id:
+            logger.warning("Wrong Application Id. Expected " +
+                           expected_app_id + ". Received " + app_id_from_event +
+                           ". Thrown Exception %s", e)
             raise aux.WrongApplicationIdException
     except KeyError as e:
         logger.error("'session' or 'request' not found in event: %s", e)
-        raise
-    except aux.WrongApplicationIdException as e:
-        logger.warning("Wrong Application Id. Expected " +
-                       expected_app_id + ". Received " + app_id_from_event +
-                       ". Thrown Exception %s", e)
         raise
 
     if session['new']:
@@ -135,12 +134,9 @@ def build_response(session_attributes, speechlet_response):
 
 
 def build_rpi_payload(request):
-    payload = {}
+    # payload = {'key': encrypted_string, 'type': 'FeedDogsNow'}
+    payload = {'timestamp': int(time.time())}
 
-    secret_key = get_secret_key()
-    access_key = os.environ['SPARKABOWL_ACCESS_KEY']
-    encrypted_access_key = encrypt_string(secret_key, access_key)
-    payload['key'] = encrypted_access_key
     if request['intent']['name'] == 'FeedDogsIntent':
         sub_payload = build_feed_now_payload()
     # more intents to come
@@ -217,18 +213,17 @@ def get_secret_key():
         secret_key = config_info['sparkabowl_secret_key']
     except KeyError as e:
         logger.error('Config file malformed: sparkabowl_secret_key not found\n{}'.format(e))
+        raise e
 
     return secret_key
 
 
-def encrypt_string(key, string):
+def get_hmac_signature(request):
 
-    encoded_key = base64.urlsafe_b64encode(key)
+    secret_key = get_secret_key()
+    signature = hmac.new(secret_key, request.body, digestmod=hashlib.sha512)
 
-    f = Fernet(encoded_key)
-    token = f.encrypt(string)
-
-    return token
+    return signature.hexdigest()
 
 
 def send_json_to_rpi(payload, https=False):
@@ -237,9 +232,6 @@ def send_json_to_rpi(payload, https=False):
     Keyword arguments:
     payloathe JSON blob to send to the RPi
     """
-    # TODO FIXME This is so screwed up and dangerous - it needs to be fixed asap
-    # Probably needs to be doing something like this
-    # http://stackoverflow.com/questions/6999565/python-https-get-with-basic-authentication
 
     router_dns_name = 'howinator.dynalias.com'
     http_rpi_port = 40070
@@ -250,9 +242,16 @@ def send_json_to_rpi(payload, https=False):
     else:
         request_url = 'http://{dns}:{port}'.format(dns=router_dns_name, port=http_rpi_port)
 
-    r = requests.post(request_url, json=payload)
+    r = requests.Request('POST', request_url, data=payload)
+    prepped = r.prepare()
+    signature = get_hmac_signature(prepped)
 
-    if r.status_code == 200:
+    prepped.headers['Sign'] = signature
+
+    with requests.Session() as s:
+        response = s.send(prepped)
+
+    if response == 200:
         return True
     else:
         return False

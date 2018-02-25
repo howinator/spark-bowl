@@ -23,7 +23,7 @@ func randSeq(n int) string {
 func TestDownloadConfig(t *testing.T) {
 	filename := "/tmp/" + randSeq(8)
 	configparams := &DownloadConfigInput{LocalFileName: filename}
-	download_config(configparams)
+	downloadConfig(configparams)
 	_, err := os.Stat(filename)
 	if err != nil {
 		t.Error("File did not download successfully!")

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -11,13 +10,21 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	// "gopkg.in/yaml.v2"
 	// "github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"io/ioutil"
+	"gopkg.in/yaml.v2"
 )
 
 type DownloadConfigInput struct {
 	LocalFileName string
 }
 
-func download_config(inp *DownloadConfigInput) {
+type DownloadConfigOutput struct {
+	SparkaBowlSecretKey string
+}
+
+
+
+func downloadConfig(inp *DownloadConfigInput) {
 	sess, err := session.NewSession()
 	if err != nil {
 		panic(err)
@@ -30,7 +37,7 @@ func download_config(inp *DownloadConfigInput) {
 	}
 	_, err = stssvc.AssumeRole(stsparams)
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Error.Println(err.Error())
 		return
 	}
 	// fmt.Println(stsresp)
@@ -43,7 +50,7 @@ func download_config(inp *DownloadConfigInput) {
 
 	resp, err := svc.GetObject(params)
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Error.Println(err.Error())
 		return
 	}
 
@@ -52,8 +59,32 @@ func download_config(inp *DownloadConfigInput) {
 
 	_, err = io.Copy(outFile, resp.Body)
 	if err != nil {
-		fmt.Println(err.Error())
+		logger.Error.Println(err.Error())
+		//fmt.Println(err.Error())
 		return
 	}
+
+}
+
+
+func getSecretKey() string {
+
+	config := DownloadConfigInput{"/tmp/sprarkabowl-config.yml"}
+
+	downloadConfig(&config)
+
+	confStr, err := ioutil.ReadFile(config.LocalFileName)
+	if err != nil {
+		logger.Error.Println(err.Error())
+	}
+
+	parsedConf := DownloadConfigOutput{}
+
+	err = yaml.Unmarshal([]byte(confStr), &parsedConf)
+	if err != nil {
+		logger.Error.Println(err.Error())
+	}
+
+	return parsedConf.SparkaBowlSecretKey
 
 }

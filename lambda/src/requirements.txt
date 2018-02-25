@@ -1,0 +1,4 @@
+PyYAML==3.12
+boto3
+# cryptography
+requests
