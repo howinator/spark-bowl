@@ -10,8 +10,7 @@ import (
 	"github.com/stianeikeland/go-rpio"
 )
 
-var secretKey = getSecretKey()
-
+var secretKey string
 
 func handler(rw http.ResponseWriter, r *http.Request) {
 	// platform specific code
@@ -69,6 +68,8 @@ func handler(rw http.ResponseWriter, r *http.Request) {
 
 func main() {
 	var port string
+
+	secretKey = getSecretKey()
 
 	port = ":" + os.Getenv("SPARKABOWL_PORT")
 	if port == "" {

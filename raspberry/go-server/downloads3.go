@@ -37,6 +37,7 @@ func downloadConfig(inp *DownloadConfigInput) {
 	}
 	_, err = stssvc.AssumeRole(stsparams)
 	if err != nil {
+		logger.Error.Println("method was wrong")
 		logger.Error.Println(err.Error())
 		return
 	}
