@@ -10,7 +10,8 @@ import yaml
 
 import boto3
 import botocore
-import requests
+from requests import Request, Session
+
 
 import auxiliary as aux
 
@@ -221,7 +222,7 @@ def get_secret_key():
 def get_hmac_signature(request):
 
     secret_key = get_secret_key()
-    signature = hmac.new(secret_key, request.body, digestmod=hashlib.sha512)
+    signature = hmac.new(secret_key.encode('utf-8'), request.body.encode('utf-8'), digestmod=hashlib.sha512)
 
     return signature.hexdigest()
 
@@ -234,7 +235,7 @@ def send_json_to_rpi(payload, https=False):
     """
 
     router_dns_name = 'howinator.dynalias.com'
-    http_rpi_port = 40070
+    http_rpi_port = 8082
     https_rpi_port = 40071
 
     if https:
@@ -242,16 +243,18 @@ def send_json_to_rpi(payload, https=False):
     else:
         request_url = 'http://{dns}:{port}'.format(dns=router_dns_name, port=http_rpi_port)
 
-    r = requests.Request('POST', request_url, data=payload)
+    r = Request('POST', request_url, data=payload)
     prepped = r.prepare()
     signature = get_hmac_signature(prepped)
 
     prepped.headers['Sign'] = signature
 
-    with requests.Session() as s:
+    with Session() as s:
         response = s.send(prepped)
 
-    if response == 200:
+    print('got here')
+
+    if response.status_code == 200:
         return True
     else:
         return False
