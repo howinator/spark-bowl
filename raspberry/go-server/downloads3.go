@@ -7,11 +7,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/sts"
+	//"github.com/aws/aws-sdk-go/service/sts"
 	// "gopkg.in/yaml.v2"
 	// "github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"io/ioutil"
 	"gopkg.in/yaml.v2"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 )
 
 type DownloadConfigInput struct {
@@ -30,18 +31,22 @@ func downloadConfig(inp *DownloadConfigInput) {
 		panic(err)
 	}
 
-	stssvc := sts.New(sess, &aws.Config{Region: aws.String("us-east-1")})
-	stsparams := &sts.AssumeRoleInput{
-		RoleArn:         aws.String("arn:aws:iam::742524706181:role/ConfigKeyAccess"),
-		RoleSessionName: aws.String("golangAssumeRoleTest"),
-	}
-	_, err = stssvc.AssumeRole(stsparams)
-	if err != nil {
-		logger.Error.Println("method was wrong")
-		logger.Error.Println(err.Error())
-		return
-	}
-	// fmt.Println(stsresp)
+	//stssvc := sts.New(sess, &aws.Config{Region: aws.String("us-east-1")})
+	//stsparams := &sts.AssumeRoleInput{
+	//	RoleArn:         aws.String("arn:aws:iam::742524706181:role/ConfigKeyAccess"),
+	//	RoleSessionName: aws.String("golangAssumeRoleTest"),
+	//}
+	//var assumrol *sts.AssumeRoleOutput
+	//assumrol, err = stssvc.AssumeRole(stsparams)
+	//if err != nil {
+	//	logger.Error.Println("method was wrong")
+	//	logger.Error.Println(err.Error())
+	//	return
+	//}
+	//// fmt.Println(stsresp)
+
+	creds := stscreds.NewCredentials(sess, "arn:aws:iam::742524706181:role/ConfigKeyAccess")
+	sess, err = session.NewSession(&aws.Config{Credentials: creds, Region: aws.String("us-east-1")})
 
 	svc := s3.New(sess, &aws.Config{Region: aws.String("us-east-1")})
 	params := &s3.GetObjectInput{

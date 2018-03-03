@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/json"
+	//"encoding/json"
 	"io"
-	"bytes"
+	//"bytes"
 	"time"
 	"crypto/hmac"
 	"crypto/sha512"
@@ -19,12 +19,13 @@ const allowedMessageExpiry = 2
 func (m *Message) processMessage(mbody io.ReadCloser) error {
 
 
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(mbody)
-
-	err := json.Unmarshal(buf.Bytes(), m)
-
-	return err
+	//buf := new(bytes.Buffer)
+	//buf.ReadFrom(mbody)
+	//
+	//err := json.Unmarshal(buf.Bytes(), m)
+	//
+	//return err
+	return nil
 
 }
 

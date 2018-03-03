@@ -15,7 +15,7 @@
 
     - name: provision an instance
       ec2:
-        key_name: Macid_rsa
+        key_name: id_rsa
         group: ssh
         instance_type: t2.nano
         image: ami-c58c1dd3

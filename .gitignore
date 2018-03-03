@@ -570,3 +570,4 @@ Temporary Items
 *.csv
 access-key.yml
 
+**/go-server/vendor/*
